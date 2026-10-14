@@ -124,6 +124,19 @@ p { max-width: 65ch; }
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); mask-composite: exclude; }
 .card.tilting::before { opacity: 1; }
+.preview { position: relative; aspect-ratio: 16 / 10; margin: 0 0 1.25rem; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.preview::after, .preview img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.preview::after { content: "TODO: screenshot"; display: grid; place-items: center; font: 400 .8rem var(--font-mono); color: var(--muted);
+  background: repeating-linear-gradient(135deg, transparent 0 10px, var(--line) 10px 11px); }
+.preview img { z-index: 1; object-fit: cover; display: block; }
+.card:has(details[open]) .preview { max-width: 40rem; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .preview::after, .preview img { opacity: .35; transform: translateY(12px); transition: transform .25s ease-out, opacity .25s ease-out; }
+  .card:hover .preview::after, .card:hover .preview img,
+  .card:focus-within .preview::after, .card:focus-within .preview img { opacity: 1; }
+  .card:hover .preview::after, .card:focus-within .preview::after { transform: none; }
+  .card:hover .preview img, .card:focus-within .preview img { transform: scale(1.03); }
+}
 .card h3 { font: 600 1.3rem/1.2 var(--font-sans); letter-spacing: -.015em; margin: 0 0 .75rem; }
 .card p { margin: 0 0 .5rem; color: var(--muted); }
 .links { display: flex; gap: 1.5rem; font: 500 .85rem var(--font-mono); }
