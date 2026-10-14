@@ -91,7 +91,7 @@ const resetTilt = c => { c.classList.remove('tilting'); c.style.setProperty('--r
 // Hero spotlight + card tilt: skipped entirely for touch or reduced motion
 if (!reduced && !coarse) {
   root.classList.add('fx-on');
-  // Hero spotlight + grid glow
+  // Hero spotlight
   const hero = document.querySelector('.hero');
   hero.addEventListener('pointermove', e => {
     const r = hero.getBoundingClientRect();
@@ -113,6 +113,53 @@ if (!reduced && !coarse) {
     });
     card.addEventListener('pointerleave', () => resetTilt(card));
   });
+}
+
+// Hero dot field: dots near the pointer light up and shift away, then spring back (static when reduced)
+const dotsHero = document.querySelector('.hero'), dots = document.createElement('canvas'), dc = dots.getContext && dots.getContext('2d');
+if (dc && 'ResizeObserver' in window) {
+  dots.className = 'dots'; dots.setAttribute('aria-hidden', 'true'); dotsHero.prepend(dots); dotsHero.classList.add('dots-on');
+  const cs = getComputedStyle(root), px = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const rgba = v => { px.clearRect(0, 0, 1, 1); px.fillStyle = v.trim(); px.fillRect(0, 0, 1, 1); return px.getImageData(0, 0, 1, 1).data; };
+  const base = rgba(cs.getPropertyValue('--line-strong')), acc = rgba(cs.getPropertyValue('--accent'));
+  const R = 120, PUSH = 8, ptr = { x: 0, y: 0, on: false };
+  let w, h, dpr, n, bx, by, ox, oy, vx, vy, k, raf = 0, seen = true;
+  const draw = () => {
+    dc.setTransform(dpr, 0, 0, dpr, 0, 0); dc.clearRect(0, 0, w, h);
+    for (let i = 0; i < n; i++) {
+      const t = k[i], c = j => base[j] + (acc[j] - base[j]) * t;
+      dc.fillStyle = `rgba(${c(0) | 0},${c(1) | 0},${c(2) | 0},${(base[3] + (255 - base[3]) * t * .8) / 255})`;
+      dc.beginPath(); dc.arc(bx[i] + ox[i], by[i] + oy[i], 1.2 + t * .6, 0, 6.2832); dc.fill();
+    }
+  };
+  const tick = () => {
+    raf = 0; let moving = ptr.on;
+    for (let i = 0; i < n; i++) {
+      const dx = bx[i] - ptr.x, dy = by[i] - ptr.y, d = Math.hypot(dx, dy) || 1, near = ptr.on && d < R ? 1 - d / R : 0;
+      vx[i] = (vx[i] + (dx / d * near * PUSH - ox[i]) * .12) * .8; vy[i] = (vy[i] + (dy / d * near * PUSH - oy[i]) * .12) * .8;
+      ox[i] += vx[i]; oy[i] += vy[i]; k[i] += (near - k[i]) * .15;
+      if (Math.max(Math.abs(ox[i]), Math.abs(oy[i]), Math.abs(k[i] * 20)) > .05) moving = true;
+    }
+    draw();
+    if (moving) go();
+  };
+  const go = () => { if (!raf && seen && !document.hidden) raf = requestAnimationFrame(tick); };
+  const build = () => {
+    const r = dotsHero.getBoundingClientRect(); w = r.width; h = r.height; dpr = Math.min(devicePixelRatio || 1, 2);
+    dots.width = Math.round(w * dpr); dots.height = Math.round(h * dpr);
+    const step = Math.max(28, Math.sqrt(w * h / 3000)), cols = Math.floor(w / step) + 1, rows = Math.floor(h / step) + 1;
+    n = cols * rows; [bx, by, ox, oy, vx, vy, k] = Array.from({ length: 7 }, () => new Float32Array(n));
+    for (let i = 0; i < n; i++) { bx[i] = (i % cols) * step + (w - (cols - 1) * step) / 2; by[i] = Math.floor(i / cols) * step + (h - (rows - 1) * step) / 2; }
+    draw();
+  };
+  new ResizeObserver(build).observe(dotsHero);
+  if (!reduced) {
+    const aim = e => { const r = dotsHero.getBoundingClientRect(); ptr.x = e.clientX - r.left; ptr.y = e.clientY - r.top; ptr.on = true; go(); };
+    dotsHero.addEventListener('pointermove', aim); dotsHero.addEventListener('pointerdown', aim);
+    dotsHero.addEventListener('pointerleave', () => { ptr.on = false; go(); });
+    new IntersectionObserver(([e]) => { seen = e.isIntersecting; go(); }).observe(dotsHero);
+    document.addEventListener('visibilitychange', go);
+  }
 }
 
 // Project filter: chips are built here so without JS every card just shows
@@ -162,7 +209,7 @@ if (codeEl && !reduced && 'IntersectionObserver' in window) {
   nodes.forEach(([n]) => { n.data = ''; });
   const caret = Object.assign(document.createElement('span'), { className: 'caret' });
   caret.setAttribute('aria-hidden', 'true');
-  nodes[0][0].before(caret);
+  nodes[0][0].after(caret);
   codeEl.setAttribute('aria-hidden', 'true');
   codeEl.classList.add('typing');
   new IntersectionObserver((es, o) => {
@@ -172,7 +219,7 @@ if (codeEl && !reduced && 'IntersectionObserver' in window) {
     const timer = setInterval(() => {
       const [n, full] = nodes[i];
       n.data = full.slice(0, ++c);
-      if (c >= full.length) { i++; c = 0; nodes[i]?.[0].before(caret); }
+      if (c >= full.length) { i++; c = 0; nodes[i]?.[0].after(caret); }
       if (i >= nodes.length) { clearInterval(timer); code.lastElementChild.append(caret); codeEl.removeAttribute('aria-hidden'); }
     }, 30);
   }, { threshold: 0.4 }).observe(codeEl);
