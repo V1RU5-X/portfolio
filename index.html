@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TODO: Your Name - Portfolio</title>
 <meta name="description" content="TODO: one-line description of your portfolio">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0f14">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
+<div class="progress" aria-hidden="true"></div>
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="site-header">
@@ -33,41 +35,53 @@
 
 <main id="main">
   <section class="hero" id="top" aria-labelledby="hero-title">
-    <div class="wrap">
-      <h1 id="hero-title" class="hero-title">TODO: Your Name</h1>
-      <p class="hero-role">TODO: Your role, e.g. Designer and developer</p>
-      <p class="hero-tag">TODO: one-line tagline about what you make and for whom.</p>
-      <div class="btn-row">
-        <a class="btn btn-primary" href="#projects">View projects</a>
-        <a class="btn btn-ghost" href="#contact">Contact</a>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1 id="hero-title" class="hero-title" style="--i:0">TODO: Your Name</h1>
+        <p class="hero-role" style="--i:1">TODO: Your role, e.g. Designer and developer<span class="caret" aria-hidden="true"></span></p>
+        <p class="hero-tag" style="--i:2">TODO: one-line tagline about what you make and for whom.</p>
+        <div class="btn-row" style="--i:3">
+          <a class="btn btn-primary" href="#projects">View projects</a>
+          <a class="btn btn-ghost" href="#contact">Contact</a>
+        </div>
       </div>
+      <aside class="term" aria-label="At a glance" style="--i:4">
+        <div class="term-bar" aria-hidden="true"><i></i><i></i><i></i><span>about.txt</span></div>
+        <dl class="term-body">
+          <div><dt>location</dt><dd>TODO: City, Country</dd></div>
+          <div><dt>focus</dt><dd>TODO: What you work on</dd></div>
+          <div><dt>status</dt><dd>TODO: Availability</dd></div>
+        </dl>
+      </aside>
     </div>
   </section>
 
   <section class="section" id="about" aria-labelledby="about-title">
-    <div class="wrap about-grid reveal">
+    <div class="wrap">
+    <div class="sec-head reveal"><span class="num" aria-hidden="true">01 /</span><h2 id="about-title" class="h2">About</h2></div>
+    <div class="about-grid reveal">
       <div class="photo">
         <span class="photo-fallback" aria-hidden="true">TODO</span>
         <img src="photo.jpg" alt="TODO: describe your photo, e.g. Portrait of your name smiling" width="400" height="500" onerror="this.remove()">
       </div>
       <div>
-        <h2 id="about-title" class="h2">About</h2>
         <p>TODO: Bio paragraph one. Say who you are, what you do and what you care about.</p>
         <p>TODO: Bio paragraph two. Mention where you work or study and what you are looking for next.</p>
         <ul class="tags" aria-label="Skills">
-          <li>TODO: Skill one</li>
-          <li>TODO: Skill two</li>
-          <li>TODO: Skill three</li>
-          <li>TODO: Skill four</li>
-          <li>TODO: Skill five</li>
+          <li class="reveal">TODO: Skill one</li>
+          <li class="reveal">TODO: Skill two</li>
+          <li class="reveal">TODO: Skill three</li>
+          <li class="reveal">TODO: Skill four</li>
+          <li class="reveal">TODO: Skill five</li>
         </ul>
       </div>
+    </div>
     </div>
   </section>
 
   <section class="section" id="projects" aria-labelledby="projects-title">
     <div class="wrap">
-      <h2 id="projects-title" class="h2 reveal">Projects</h2>
+      <div class="sec-head reveal"><span class="num" aria-hidden="true">02 /</span><h2 id="projects-title" class="h2">Projects</h2></div>
       <div class="cards">
         <article class="card reveal">
           <h3>TODO: Project one title</h3>
@@ -99,8 +113,8 @@
 
   <section class="section" id="accomplishments" aria-labelledby="acc-title">
     <div class="wrap">
-      <h2 id="acc-title" class="h2 reveal">Accomplishments</h2>
-      <ol class="timeline">
+      <div class="sec-head reveal"><span class="num" aria-hidden="true">03 /</span><h2 id="acc-title" class="h2">Accomplishments</h2></div>
+      <ol class="timeline draw">
         <li class="reveal"><span class="year">TODO: 2025</span><h3>TODO: Award or milestone</h3><p>TODO: One short sentence describing it.</p></li>
         <li class="reveal"><span class="year">TODO: 2024</span><h3>TODO: Certification</h3><p>TODO: One short sentence describing it.</p></li>
         <li class="reveal"><span class="year">TODO: 2023</span><h3>TODO: Launch or publication</h3><p>TODO: One short sentence describing it.</p></li>
@@ -110,8 +124,9 @@
   </section>
 
   <section class="section contact" id="contact" aria-labelledby="contact-title">
-    <div class="wrap reveal">
-      <h2 id="contact-title" class="h2">Contact</h2>
+    <div class="wrap">
+      <div class="sec-head reveal"><span class="num" aria-hidden="true">04 /</span><h2 id="contact-title" class="h2">Contact</h2></div>
+      <div class="reveal">
       <p class="contact-lead"><a href="mailto:todo@example.com">TODO: you@example.com</a></p>
       <ul class="socials">
         <li><a href="https://github.com/">GitHub (TODO: your profile)</a></li>
@@ -119,6 +134,7 @@
         <li><a href="https://example.com/">TODO: Other link</a></li>
       </ul>
       <a class="btn btn-primary" href="resume.pdf" download>Download resume</a>
+      </div>
     </div>
   </section>
 </main>
@@ -128,7 +144,7 @@
 </footer>
 
 <div class="cursor-dot" aria-hidden="true"></div>
-<div class="cursor-ring" aria-hidden="true"></div>
+<div class="cursor-ring" aria-hidden="true"><span>View</span></div>
 <script src="script.js"></script>
 </body>
 </html>

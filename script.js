@@ -2,15 +2,49 @@ const root = document.documentElement;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = matchMedia('(pointer: coarse)').matches;
 
-// Scroll reveal
-const revealEls = document.querySelectorAll('.reveal');
+// Scroll reveal, staggered by each element's index among its siblings
+const revealEls = document.querySelectorAll('.reveal, .draw');
+revealEls.forEach(el => el.style.setProperty('--i', [...el.parentElement.children].indexOf(el)));
 if (reduced || !('IntersectionObserver' in window)) {
   revealEls.forEach(el => el.classList.add('in'));
 } else {
   const io = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      el.classList.add('in');
+      io.unobserve(el);
+      // drop the stagger delay afterwards so hover/tilt transitions stay instant
+      el.addEventListener('transitionend', () => el.classList.add('done'), { once: true });
+    });
   }, { threshold: 0.15 });
   revealEls.forEach(el => io.observe(el));
+}
+
+// Nav: blurred bar once scrolled, scroll progress, active section link
+const header = document.querySelector('.site-header');
+const bar = document.querySelector('.progress');
+function onScroll() {
+  header.classList.toggle('scrolled', scrollY > 8);
+  const max = root.scrollHeight - innerHeight;
+  bar.style.transform = `scaleX(${max > 0 ? Math.min(scrollY / max, 1) : 0})`;
+}
+addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+
+if ('IntersectionObserver' in window) {
+  const navLinks = [...document.querySelectorAll('.nav-links a')];
+  const spy = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      navLinks.forEach(a => {
+        const on = a.hash === '#' + e.target.id;
+        a.classList.toggle('active', on);
+        if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+      });
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  document.querySelectorAll('main section[id]').forEach(s => spy.observe(s));
 }
 
 // Mobile nav
@@ -39,9 +73,15 @@ if (!reduced && !coarse) {
     ring.style.transform = `translate(${rx}px, ${ry}px)`;
     requestAnimationFrame(loop);
   })();
-  document.addEventListener('pointerover', e => ring.classList.toggle('hover', !!e.target.closest('a, button, .card')));
+  document.addEventListener('pointerover', e => {
+    const link = !!e.target.closest('a, button');
+    const card = !link && !!e.target.closest('.card');
+    ring.classList.toggle('hover', link);
+    ring.classList.toggle('on-card', card);
+    dot.classList.toggle('hide', link || card);
+  });
 
-  // Hero spotlight
+  // Hero spotlight + grid glow
   const hero = document.querySelector('.hero');
   hero.addEventListener('pointermove', e => {
     const r = hero.getBoundingClientRect();
@@ -49,14 +89,14 @@ if (!reduced && !coarse) {
     hero.style.setProperty('--my', `${e.clientY - r.top}px`);
   });
 
-  // Card tilt + glare
+  // Card tilt (max 3deg) + border highlight
   document.querySelectorAll('.card').forEach(card => {
     card.addEventListener('pointermove', e => {
       const r = card.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
       card.classList.add('tilting');
-      card.style.setProperty('--ry', `${(px - 0.5) * 16}deg`);
-      card.style.setProperty('--rx', `${(0.5 - py) * 16}deg`);
+      card.style.setProperty('--ry', `${(px - 0.5) * 6}deg`);
+      card.style.setProperty('--rx', `${(0.5 - py) * 6}deg`);
       card.style.setProperty('--gx', `${px * 100}%`);
       card.style.setProperty('--gy', `${py * 100}%`);
     });

@@ -9,15 +9,15 @@ A single place to present who I am, what I have achieved and what I have built: 
 ## Features
 
 - Four sections: About, Projects, Accomplishments (as a timeline) and Contact, plus a hero at the top.
-- Bold design with light and dark mode. The theme follows the visitor's system setting (`prefers-color-scheme`); there is no manual toggle.
-- Cursor effects on desktop: a trailing dot and ring cursor, a hero spotlight that follows the pointer, and project cards that tilt toward the pointer with a shine.
-- Scroll-reveal: sections and cards fade in as they enter the viewport.
+- Dark, modern-tech design (dark theme only). The layout scales to any screen size, from phones to 4K monitors, with fluid margins and type.
+- Cursor effects on desktop: a dot and thin trailing ring that reacts to links and project cards, a hero spotlight that lights up a faint grid, and project cards that tilt slightly with a border highlight.
+- Animations: staggered hero intro, scroll-reveal of sections and cards, drawing section rules and timeline, active-section nav highlight and a scroll progress bar.
 - Mobile navigation: the menu collapses behind a toggle button below 720px wide.
-- Accessibility: skip link, visible focus styles, ARIA labels on navigation and sections. The cursor effects are turned off on touch devices (`pointer: coarse`) and when the visitor prefers reduced motion. With reduced motion, scroll-reveal is also skipped and content shows immediately.
+- Accessibility: skip link, visible focus styles, ARIA labels on navigation and sections. The cursor effects and tilt are turned off on touch devices (`pointer: coarse`) and when the visitor prefers reduced motion. With reduced motion, animations are also skipped and content shows immediately.
 
 ## Tech
 
-Plain HTML, CSS and JavaScript. No build step and no dependencies. Fonts come from Google Fonts: Bricolage Grotesque (headings) and Figtree (body text).
+Plain HTML, CSS and JavaScript. No build step and no dependencies. Fonts come from Google Fonts: Inter (text) and JetBrains Mono (labels).
 
 ## Project structure
 
