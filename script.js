@@ -21,6 +21,35 @@ if (reduced || !('IntersectionObserver' in window)) {
   revealEls.forEach(el => io.observe(el));
 }
 
+// Text decode: the hero name and section headings scramble, then settle left to right (once each)
+function decode(el, delay = 0) {
+  const text = el.textContent, glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/_<>';
+  const { width, height } = el.getBoundingClientRect();
+  el.setAttribute('aria-label', text); // assistive tech only ever gets the real text
+  el.style.width = width + 'px'; el.style.overflow = 'hidden'; // fixed (not min) width: heading is a flex item
+  el.style.height = height + 'px';
+  const t0 = performance.now() + delay;
+  (function frame(now) {
+    const p = Math.min((now - t0) / 600, 1);
+    const keep = Math.floor(p * text.length);
+    el.textContent = [...text].map((ch, i) => (i < keep || ch === ' ' ? ch : glyphs[Math.floor(Math.random() * glyphs.length)])).join('');
+    if (p < 1) return requestAnimationFrame(frame);
+    el.textContent = text;
+    el.removeAttribute('aria-label');
+    el.style.width = el.style.height = el.style.overflow = '';
+    if (!el.getAttribute('style')) el.removeAttribute('style');
+  })(performance.now());
+}
+if (!reduced && 'IntersectionObserver' in window) {
+  decode(document.querySelector('.hero-title'), 100); // matches the hero rise delay
+  const dio = new IntersectionObserver(entries => entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    dio.unobserve(e.target);
+    decode(e.target);
+  }), { threshold: 0.15 });
+  document.querySelectorAll('h2.h2').forEach(h => dio.observe(h));
+}
+
 // Nav: blurred bar once scrolled, scroll progress, active section link
 const header = document.querySelector('.site-header');
 const bar = document.querySelector('.progress');
