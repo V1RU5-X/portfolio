@@ -121,114 +121,32 @@ function applyFilter(tag) {
   filterStatus.textContent = `Showing ${n} of ${cardEls.length} projects`;
 }
 
-// Terminal: built here so the static about lines are all that shows without JS
-const term = document.querySelector('.term');
-const termText = sel => document.querySelector(sel)?.textContent.trim() ?? '';
 const scrollBehavior = () => (reduced ? 'auto' : 'smooth');
-const log = Object.assign(document.createElement('div'), { className: 'term-log' });
-log.setAttribute('role', 'log');
-log.setAttribute('aria-live', 'polite');
-log.tabIndex = 0; // scrollable region must be keyboard reachable
-const form = document.createElement('form');
-form.className = 'term-form';
-form.innerHTML = '<label for="term-input">Terminal command</label><span class="term-prompt" aria-hidden="true">&gt;</span>' +
-  '<input class="term-input" id="term-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="type a command, or try help">'; // static markup only, no user text
-const input = form.querySelector('input');
-const chips = Object.assign(document.createElement('div'), { className: 'term-chips' });
-['help', 'about', 'projects', 'contact'].forEach(name => {
-  const b = Object.assign(document.createElement('button'), { type: 'button', textContent: name });
-  b.addEventListener('click', () => run(name));
-  chips.append(b);
-});
-term.append(log, form, chips);
 
-function line(text, cls) {
-  const d = document.createElement('div');
-  if (cls) d.className = cls;
-  d.textContent = text;
-  log.append(d);
-  log.scrollTop = log.scrollHeight;
-  return d;
-}
-function goTo(id) { document.getElementById(id).scrollIntoView({ behavior: scrollBehavior() }); }
-
-const commands = {
-  help: ['list commands', () => Object.entries(commands).forEach(([n, c]) => line(`${n.padEnd(9)}${c[0]}`))],
-  about: ['who I am', () => {
-    [termText('.hero-title'), termText('.hero-role'), ...[...document.querySelectorAll('.about-grid p')].map(p => p.textContent.trim())].forEach(t => line(t));
-    document.querySelectorAll('.term-body > div').forEach(r => line(`${r.querySelector('dt').textContent}: ${r.querySelector('dd').textContent}`));
-  }],
-  skills: ['what I work with', () => line([...document.querySelectorAll('.about-grid .tags li')].map(li => li.textContent.trim()).join(', '))],
-  projects: ['list projects, jump to them', () => {
-    document.querySelectorAll('.card h3').forEach((h, i) => line(`${i + 1}. ${h.textContent.trim()}`));
-    goTo('projects');
-  }],
-  contact: ['email and links, jump to them', () => {
-    document.querySelectorAll('.contact a:not(.btn)').forEach(src => {
-      const d = line('');
-      const a = document.createElement('a');
-      a.href = src.href;
-      a.textContent = src.textContent.trim();
-      if (/^https?:/.test(src.href)) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
-      d.append(a);
-    });
-    goTo('contact');
-  }],
-  resume: ['open the resume in a new tab', () => {
-    const a = document.querySelector('a[href$="resume.pdf"]');
-    if (a) window.open(a.href, '_blank', 'noopener');
-    else line('no resume found', 'err');
-  }],
-  clear: ['empty the log', () => { log.textContent = ''; }],
-};
-const names = Object.keys(commands);
-const cmdHistory = [];
-let hpos = 0;
-
-function run(raw) {
-  const cmd = raw.trim().toLowerCase();
-  stopIntro();
-  line(`> ${raw.trim()}`, 'cmd');
-  if (!cmd) return;
-  if (cmd !== cmdHistory[cmdHistory.length - 1]) cmdHistory.push(cmd);
-  hpos = cmdHistory.length;
-  if (commands[cmd]) commands[cmd][1]();
-  else line(`command not found: ${raw.trim()} \u2014 try help`, 'err');
-}
-
-form.addEventListener('submit', e => { e.preventDefault(); const v = input.value; input.value = ''; run(v); });
-input.addEventListener('keydown', e => {
-  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-    e.preventDefault();
-    hpos = Math.max(0, Math.min(cmdHistory.length, hpos + (e.key === 'ArrowUp' ? -1 : 1)));
-    input.value = cmdHistory[hpos] ?? '';
-  } else if (e.key === 'Tab') {
-    const v = input.value.trim().toLowerCase();
-    const m = v && names.filter(n => n.startsWith(v));
-    if (m && m.length === 1) { e.preventDefault(); input.value = m[0]; } // otherwise Tab keeps moving focus
-  }
-});
-input.addEventListener('input', () => stopIntro());
-
-// Intro: type "help" once, instantly under reduced motion or when the user interacts
-let introTimer = null, introLine = null;
-function stopIntro() {
-  if (introTimer === null) return;
-  clearInterval(introTimer);
-  introTimer = null;
-  introLine.textContent = '> help';
-  commands.help[1]();
-}
-if (reduced) {
-  line('> help', 'cmd');
-  commands.help[1]();
-} else {
-  introLine = line('> ', 'cmd');
-  let n = 0;
-  introTimer = setInterval(() => {
-    introLine.textContent = '> help'.slice(0, 2 + ++n);
-    if (n === 4) { stopIntro(); }
-  }, 40);
+// Hero code panel: types itself once when scrolled into view, keeping the token spans
+const codeEl = document.querySelector('.code');
+if (codeEl && !reduced && 'IntersectionObserver' in window) {
+  const code = codeEl.querySelector('code');
+  const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  for (let n; (n = walker.nextNode());) nodes.push([n, n.data]);
+  nodes.forEach(([n]) => { n.data = ''; });
+  const caret = Object.assign(document.createElement('span'), { className: 'caret' });
+  caret.setAttribute('aria-hidden', 'true');
+  nodes[0][0].before(caret);
+  codeEl.setAttribute('aria-hidden', 'true');
+  codeEl.classList.add('typing');
+  new IntersectionObserver((es, o) => {
+    if (!es[0].isIntersecting) return;
+    o.disconnect();
+    let i = 0, c = 0;
+    const timer = setInterval(() => {
+      const [n, full] = nodes[i];
+      n.data = full.slice(0, ++c);
+      if (c >= full.length) { i++; c = 0; nodes[i]?.[0].before(caret); }
+      if (i >= nodes.length) { clearInterval(timer); code.lastElementChild.append(caret); codeEl.removeAttribute('aria-hidden'); }
+    }, 30);
+  }, { threshold: 0.4 }).observe(codeEl);
 }
 
 // Command palette: every action is read from the page, so there is no second copy of the text
@@ -281,10 +199,6 @@ if (reduced) {
   });
   const resume = document.querySelector('#contact a[download]');
   if (resume) add('Download resume', 'action', () => resume.click());
-  add('Open terminal', 'action', () => {
-    document.querySelector('.hero').scrollIntoView({ behavior: scrollBehavior() });
-    document.getElementById('term-input').focus({ preventScroll: true });
-  });
 
   let shown = [], cur = 0, prev = null;
   function highlight(i) {
@@ -329,7 +243,7 @@ if (reduced) {
   });
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
   dlg.addEventListener('close', () => {
-    // Actions that move focus (terminal) win; otherwise hand it back
+    // Hand focus back unless an action moved it
     if ((!document.activeElement || document.activeElement === document.body) && prev?.isConnected) prev.focus({ preventScroll: true });
   });
   addEventListener('keydown', e => {
