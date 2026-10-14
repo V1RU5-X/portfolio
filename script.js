@@ -57,30 +57,9 @@ function setMenu(open) {
 toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
 links.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
 
-// Cursor effects: skipped entirely for touch or reduced motion
+// Hero spotlight + card tilt: skipped entirely for touch or reduced motion
 if (!reduced && !coarse) {
-  root.classList.add('cursor-on');
-  const dot = document.querySelector('.cursor-dot');
-  const ring = document.querySelector('.cursor-ring');
-  let x = innerWidth / 2, y = innerHeight / 2, rx = x, ry = y;
-
-  addEventListener('pointermove', e => {
-    x = e.clientX; y = e.clientY;
-    dot.style.transform = `translate(${x}px, ${y}px)`;
-  });
-  (function loop() {
-    rx += (x - rx) * 0.15; ry += (y - ry) * 0.15;
-    ring.style.transform = `translate(${rx}px, ${ry}px)`;
-    requestAnimationFrame(loop);
-  })();
-  document.addEventListener('pointerover', e => {
-    const link = !!e.target.closest('a, button');
-    const card = !link && !!e.target.closest('.card');
-    ring.classList.toggle('hover', link);
-    ring.classList.toggle('on-card', card);
-    dot.classList.toggle('hide', link || card);
-  });
-
+  root.classList.add('fx-on');
   // Hero spotlight + grid glow
   const hero = document.querySelector('.hero');
   hero.addEventListener('pointermove', e => {
