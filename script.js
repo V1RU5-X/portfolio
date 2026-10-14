@@ -115,27 +115,36 @@ if (!reduced && !coarse) {
   });
 }
 
-// Hero dot field: dots near the pointer light up and shift away, then spring back (static when reduced)
-const dotsHero = document.querySelector('.hero'), dots = document.createElement('canvas'), dc = dots.getContext && dots.getContext('2d');
-if (dc && 'ResizeObserver' in window) {
-  dots.className = 'dots'; dots.setAttribute('aria-hidden', 'true'); dotsHero.prepend(dots); dotsHero.classList.add('dots-on');
+// Dot field: one fixed canvas, dots sit on a page-anchored grid and scroll with the content, fading out above #contact.
+// Dots near the pointer light up and shift away, then spring back (static when reduced)
+const dots = document.createElement('canvas'), dc = dots.getContext && dots.getContext('2d'), dotsEnd = document.getElementById('contact');
+if (dc && dotsEnd && 'ResizeObserver' in window) {
+  dots.className = 'dots'; dots.setAttribute('aria-hidden', 'true'); document.body.prepend(dots); root.classList.add('dots-on');
   const cs = getComputedStyle(root), px = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
   const rgba = v => { px.clearRect(0, 0, 1, 1); px.fillStyle = v.trim(); px.fillRect(0, 0, 1, 1); return px.getImageData(0, 0, 1, 1).data; };
   const base = rgba(cs.getPropertyValue('--line-strong')), acc = rgba(cs.getPropertyValue('--accent'));
   const R = 120, PUSH = 8, ptr = { x: 0, y: 0, on: false };
-  let w, h, dpr, n, bx, by, ox, oy, vx, vy, k, raf = 0, seen = true;
+  let w, h, dpr, n, cols, step, end, fade, bx, by, ox, oy, vx, vy, k, raf = 0, sig = '';
+  const range = () => { // dots whose rows are inside the viewport
+    const y = scrollY, r0 = Math.max(0, Math.floor((y - R - by[0] - PUSH) / step)), r1 = Math.floor((y + h + R + PUSH - by[0]) / step) + 1;
+    return [Math.min(n, r0 * cols), Math.min(n, (r1 + 1) * cols)];
+  };
   const draw = () => {
     dc.setTransform(dpr, 0, 0, dpr, 0, 0); dc.clearRect(0, 0, w, h);
-    for (let i = 0; i < n; i++) {
-      const t = k[i], c = j => base[j] + (acc[j] - base[j]) * t;
-      dc.fillStyle = `rgba(${c(0) | 0},${c(1) | 0},${c(2) | 0},${(base[3] + (255 - base[3]) * t * .8) / 255})`;
-      dc.beginPath(); dc.arc(bx[i] + ox[i], by[i] + oy[i], 1.2 + t * .6, 0, 6.2832); dc.fill();
+    const sy = scrollY, [a, z] = range();
+    for (let i = a; i < z; i++) {
+      const f = Math.min(1, (end - by[i]) / fade); if (f <= 0) continue;
+      const t = k[i], c = j => base[j] + (acc[j] - base[j]) * t, y = by[i] + oy[i] - sy;
+      if (y < -4 || y > h + 4) continue;
+      dc.fillStyle = `rgba(${c(0) | 0},${c(1) | 0},${c(2) | 0},${(base[3] + (255 - base[3]) * t * .8) / 255 * f})`;
+      dc.beginPath(); dc.arc(bx[i] + ox[i], y, 1.2 + t * .6, 0, 6.2832); dc.fill();
     }
   };
   const tick = () => {
     raf = 0; let moving = ptr.on;
-    for (let i = 0; i < n; i++) {
-      const dx = bx[i] - ptr.x, dy = by[i] - ptr.y, d = Math.hypot(dx, dy) || 1, near = ptr.on && d < R ? 1 - d / R : 0;
+    const py = ptr.y + scrollY, [a, z] = range();
+    for (let i = a; i < z; i++) {
+      const dx = bx[i] - ptr.x, dy = by[i] - py, d = Math.hypot(dx, dy) || 1, near = ptr.on && d < R ? 1 - d / R : 0;
       vx[i] = (vx[i] + (dx / d * near * PUSH - ox[i]) * .12) * .8; vy[i] = (vy[i] + (dy / d * near * PUSH - oy[i]) * .12) * .8;
       ox[i] += vx[i]; oy[i] += vy[i]; k[i] += (near - k[i]) * .15;
       if (Math.max(Math.abs(ox[i]), Math.abs(oy[i]), Math.abs(k[i] * 20)) > .05) moving = true;
@@ -143,21 +152,27 @@ if (dc && 'ResizeObserver' in window) {
     draw();
     if (moving) go();
   };
-  const go = () => { if (!raf && seen && !document.hidden) raf = requestAnimationFrame(tick); };
+  const go = () => { if (!raf && !document.hidden && scrollY < end) raf = requestAnimationFrame(tick); }; // nothing to draw at or below Contact
   const build = () => {
-    const r = dotsHero.getBoundingClientRect(); w = r.width; h = r.height; dpr = Math.min(devicePixelRatio || 1, 2);
+    w = root.clientWidth; h = innerHeight; dpr = Math.min(devicePixelRatio || 1, 2);
+    end = dotsEnd.getBoundingClientRect().top + scrollY; fade = 15 * parseFloat(cs.fontSize);
+    const next = [w, h, dpr, Math.round(end)].join();
+    if (next === sig) return; sig = next;
     dots.width = Math.round(w * dpr); dots.height = Math.round(h * dpr);
-    const step = Math.max(28, Math.sqrt(w * h / 3000)), cols = Math.floor(w / step) + 1, rows = Math.floor(h / step) + 1;
+    step = Math.max(28, Math.sqrt(w * h / 3000)); cols = Math.floor(w / step) + 1;
+    const rows = Math.floor(end / step) + 1, left = (w - (cols - 1) * step) / 2;
     n = cols * rows; [bx, by, ox, oy, vx, vy, k] = Array.from({ length: 7 }, () => new Float32Array(n));
-    for (let i = 0; i < n; i++) { bx[i] = (i % cols) * step + (w - (cols - 1) * step) / 2; by[i] = Math.floor(i / cols) * step + (h - (rows - 1) * step) / 2; }
-    draw();
+    for (let i = 0; i < n; i++) { bx[i] = (i % cols) * step + left; by[i] = Math.floor(i / cols) * step + step / 2; }
+    go();
   };
-  new ResizeObserver(build).observe(dotsHero);
+  build();
+  addEventListener('resize', build); new ResizeObserver(build).observe(document.querySelector('main'));
+  addEventListener('scroll', go, { passive: true });
   if (!reduced) {
-    const aim = e => { const r = dotsHero.getBoundingClientRect(); ptr.x = e.clientX - r.left; ptr.y = e.clientY - r.top; ptr.on = true; go(); };
-    dotsHero.addEventListener('pointermove', aim); dotsHero.addEventListener('pointerdown', aim);
-    dotsHero.addEventListener('pointerleave', () => { ptr.on = false; go(); });
-    new IntersectionObserver(([e]) => { seen = e.isIntersecting; go(); }).observe(dotsHero);
+    const aim = e => { ptr.x = e.clientX; ptr.y = e.clientY; ptr.on = true; go(); };
+    addEventListener('pointermove', aim); addEventListener('pointerdown', aim);
+    const off = () => { ptr.on = false; go(); };
+    document.documentElement.addEventListener('pointerleave', off); addEventListener('blur', off);
     document.addEventListener('visibilitychange', go);
   }
 }

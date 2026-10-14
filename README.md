@@ -10,7 +10,7 @@ A single place to present who I am, what I have achieved and what I have built: 
 
 - Four sections: About, Projects, Accomplishments (as a timeline) and Contact, plus a hero at the top.
 - Dark, modern-tech design (dark theme only). The layout scales to any screen size, from phones to 4K monitors, with fluid margins and type.
-- An interactive dot field behind the hero: dots light up and shift away from the pointer (or a touch), then spring back, with a faint glow following the pointer on top. Project cards tilt slightly on hover.
+- An interactive dot field behind the page: dots light up and shift away from the pointer (or a touch), then spring back, with a faint glow following the pointer on top. Project cards tilt slightly on hover.
 - A code-editor panel in the hero whose code types itself out once when it scrolls into view.
 - Decode effect on headings: the hero title and section headings scramble through random characters and settle into the real text.
 - Each project card has a screenshot preview that slides up and brightens on hover or focus.
