@@ -57,6 +57,8 @@ function setMenu(open) {
 toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
 links.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
 
+const resetTilt = c => { c.classList.remove('tilting'); c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); };
+
 // Hero spotlight + card tilt: skipped entirely for touch or reduced motion
 if (!reduced && !coarse) {
   root.classList.add('fx-on');
@@ -71,6 +73,7 @@ if (!reduced && !coarse) {
   // Card tilt (max 3deg) + border highlight
   document.querySelectorAll('.card').forEach(card => {
     card.addEventListener('pointermove', e => {
+      if (card.querySelector('details[open]')) return resetTilt(card); // open case study: no tilt
       const r = card.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
       card.classList.add('tilting');
@@ -79,12 +82,43 @@ if (!reduced && !coarse) {
       card.style.setProperty('--gx', `${px * 100}%`);
       card.style.setProperty('--gy', `${py * 100}%`);
     });
-    card.addEventListener('pointerleave', () => {
-      card.classList.remove('tilting');
-      card.style.setProperty('--rx', '0deg');
-      card.style.setProperty('--ry', '0deg');
-    });
+    card.addEventListener('pointerleave', () => resetTilt(card));
   });
+}
+
+// Project filter: chips are built here so without JS every card just shows
+const cardEls = [...document.querySelectorAll('.card[data-tags]')];
+const cardsBox = document.querySelector('.cards');
+const filterTags = [...new Set(cardEls.flatMap(c => c.dataset.tags.split(',')))].sort();
+const filters = Object.assign(document.createElement('div'), { className: 'filters' });
+filters.setAttribute('role', 'group');
+filters.setAttribute('aria-label', 'Filter projects by technology');
+const filterStatus = Object.assign(document.createElement('p'), { className: 'sr' });
+filterStatus.setAttribute('aria-live', 'polite');
+['All', ...filterTags].forEach(tag => {
+  const b = Object.assign(document.createElement('button'), { type: 'button', textContent: tag });
+  b.setAttribute('aria-pressed', String(tag === 'All'));
+  b.addEventListener('click', () => applyFilter(tag));
+  filters.append(b);
+});
+cardsBox.before(filters, filterStatus);
+
+function applyFilter(tag) {
+  filters.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.textContent === tag)));
+  let n = 0;
+  cardEls.forEach(c => {
+    clearTimeout(c.hideTimer);
+    if (tag === 'All' || c.dataset.tags.split(',').includes(tag)) {
+      n++;
+      if (c.hidden) { c.hidden = false; if (!reduced) { c.classList.add('out'); c.offsetWidth; } } // reflow so the fade-in runs
+      c.classList.remove('out');
+    } else if (!c.hidden) {
+      resetTilt(c); // no stale tilt on a hidden card
+      if (reduced) c.hidden = true;
+      else { c.classList.add('out'); c.hideTimer = setTimeout(() => { c.hidden = true; }, 200); }
+    }
+  });
+  filterStatus.textContent = `Showing ${n} of ${cardEls.length} projects`;
 }
 
 // Terminal: built here so the static about lines are all that shows without JS

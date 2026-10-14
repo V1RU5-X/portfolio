@@ -134,6 +134,27 @@ p { max-width: 65ch; }
 .links a { color: var(--accent); text-decoration: none; }
 .links a:hover { text-decoration: underline; text-underline-offset: .25em; }
 
+/* project filter + case study */
+.filters { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.5rem; }
+.filters button { font: 400 .8rem var(--font-mono); color: var(--muted); background: none; border: 1px solid var(--line-strong); border-radius: 4px; padding: .25rem .8rem; cursor: pointer; transition: color .2s, border-color .2s; }
+.filters button:hover { color: var(--ink); }
+.filters button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+.js .card.reveal.in.out { opacity: 0; scale: .96; pointer-events: none; transition: opacity .2s, scale .2s; transition-delay: 0s; }
+.js .card.reveal.in { scale: 1; }
+.card:has(details[open]) { grid-column: 1 / -1; }
+.case { interpolate-size: allow-keywords; margin-top: 1.25rem; border-top: 1px solid var(--line); }
+.case summary { display: flex; align-items: center; gap: .6rem; padding: .75rem 0 .25rem; cursor: pointer; list-style: none; font: 500 .85rem var(--font-mono); color: var(--ink); }
+.case summary::-webkit-details-marker { display: none; }
+.case summary::before { content: ""; width: .5em; height: .5em; border: solid var(--accent); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .2s; }
+.case[open] summary::before { transform: rotate(45deg); }
+.case dl { margin: .75rem 0 0; max-width: 40rem; }
+.case dt { font: 500 .8rem var(--font-mono); color: var(--accent); margin: 1rem 0 .25rem; }
+.case dd { margin: 0; color: var(--muted); }
+@supports (interpolate-size: allow-keywords) {
+  .case::details-content { block-size: 0; overflow: clip; transition: block-size .3s ease, content-visibility .3s allow-discrete; }
+  .case[open]::details-content { block-size: auto; }
+}
+
 /* timeline */
 .timeline { list-style: none; margin: 0; padding: 0 0 0 2rem; position: relative; }
 .timeline::before { content: ""; position: absolute; left: 0; top: .6rem; bottom: .6rem; width: 1px; background: var(--line-strong); transform-origin: top; transition: transform 1.4s cubic-bezier(.4, 0, .2, 1); }
