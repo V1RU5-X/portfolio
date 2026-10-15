@@ -35,7 +35,7 @@ p { max-width: 65ch; }
 
 /* nav */
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid transparent; transition: background-color .3s, border-color .3s, backdrop-filter .3s; }
-.site-header.scrolled { background: rgba(11, 15, 20, .72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom-color: var(--line); }
+.site-header.scrolled, .site-header:has(.nav-links.open) { background: rgba(11, 15, 20, .72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom-color: var(--line); }
 .nav { width: var(--wrap); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; min-height: 3.5rem; flex-wrap: wrap; font-family: var(--font-mono); font-size: .85rem; }
 .logo { font-weight: 500; text-decoration: none; color: var(--accent); }
 .nav-links { list-style: none; display: flex; gap: 2rem; margin: 0; padding: 0; }
@@ -48,6 +48,12 @@ p { max-width: 65ch; }
   .nav-links { display: none; flex-direction: column; gap: 0; width: 100%; padding-bottom: .75rem; }
   .nav-links.open { display: flex; }
   .nav-links a { display: block; padding: .6rem 0; background-image: none; }
+  .logo { display: flex; align-items: center; min-height: 3.5rem; } /* holds the first row's height so the toggle doesn't move */
+  .nav-toggle-label { display: inline-block; vertical-align: top; } /* lets decode lock its width without moving the baseline */
+  /* With JS the panel grows open, then script.js types the links; closed links stay out of the tab order */
+  .js .nav-links { display: flex; interpolate-size: allow-keywords; height: 0; padding-bottom: 0; overflow: clip; visibility: hidden; transition: height .2s, padding .2s, visibility 0s .2s; }
+  .js .nav-links.open { height: auto; padding-bottom: .75rem; visibility: visible; transition: height .2s, padding .2s; }
+  .js .nav-links a { min-height: calc(1lh + 1.2rem); } /* empty links keep their row while typing */
 }
 
 /* hero */
@@ -136,10 +142,10 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
 .js .card > p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .js .card .tags { margin: .75rem 0 0; }
 .js .card .links, .js .card .case { display: none; } /* shown in the dialog instead */
-.open { position: static; font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
-.open::after { content: ""; position: absolute; inset: 0; z-index: 2; } /* whole tile is the click target */
+.card .open { position: static; font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.card .open::after { content: ""; position: absolute; inset: 0; z-index: 2; } /* whole tile is the click target; scoped so .nav-links.open never gets it */
 .js .card { cursor: pointer; }
-.open:focus-visible { outline: none; }
+.card .open:focus-visible { outline: none; }
 .card:has(.open:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .js .card .preview, .js .card h3, .js .card > p, .js .card .tags { transition: opacity .3s ease; }
@@ -197,9 +203,11 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
   .project h3 { padding-right: 4.5rem; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .project[open], .palette[open] { animation: pop .25s ease-out; }
+  .palette[open] { animation: pop .25s ease-out; } /* the project dialog grows out of its tile in script.js */
   .project[open]::backdrop, .palette[open]::backdrop { animation: fade .25s ease-out; }
+  .project.shut::backdrop, .palette.shut::backdrop { opacity: 0; transition: opacity .25s; }
 }
+.project { transform-origin: 0 0; } /* FLIP scale runs from the tile's top-left corner */
 /* command palette + toast (built by script.js) */
 .palette { width: min(100% - 2rem, 36rem); max-height: none; margin: 15vh auto auto; }
 .palette-input { display: block; width: 100%; font: 400 1rem var(--font-mono); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; padding: 1rem 1.25rem; outline: none; }
@@ -261,4 +269,4 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
 .tok-key { color: var(--ink); }
 .tok-str { color: var(--str); }
 .tok-punc { color: var(--muted); }
-.code .caret { margin-left: .1em; }
+.code .caret, .nav-links .caret { margin-left: .1em; }
