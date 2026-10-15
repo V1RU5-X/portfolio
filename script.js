@@ -21,15 +21,20 @@ if (reduced || !('IntersectionObserver' in window)) {
   revealEls.forEach(el => io.observe(el));
 }
 
-// Text decode: the hero name and section headings scramble, then settle left to right (once each)
-function decode(el, delay = 0) {
-  const text = el.textContent, glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/_<>';
-  const { width, height } = el.getBoundingClientRect();
+// Text decode: the hero name and section headings scramble, then settle left to right (once each).
+// With `to`, it scrambles toward new text (the menu label); a newer call on the same element cancels the older one
+function decode(el, delay = 0, to) {
+  const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/_<>', run = el.decodeRun = {};
+  el.style.width = el.style.height = ''; // measure free of an earlier run's lock
+  let { width, height } = el.getBoundingClientRect();
+  const text = to ?? el.textContent;
+  if (to !== undefined) { el.textContent = to; width = Math.max(width, el.getBoundingClientRect().width); } // wider of old/new, so nothing jumps
   el.setAttribute('aria-label', text); // assistive tech only ever gets the real text
   el.style.width = width + 'px'; el.style.overflow = 'hidden'; // fixed (not min) width: heading is a flex item
   el.style.height = height + 'px';
   const t0 = performance.now() + delay;
   (function frame(now) {
+    if (el.decodeRun !== run) return;
     const p = Math.min((now - t0) / 600, 1);
     const keep = Math.floor(p * text.length);
     el.textContent = [...text].map((ch, i) => (i < keep || ch === ' ' ? ch : glyphs[Math.floor(Math.random() * glyphs.length)])).join('');
@@ -82,12 +87,48 @@ if ('IntersectionObserver' in window) {
 // Mobile nav
 const toggle = document.querySelector('.nav-toggle');
 const links = document.querySelector('.nav-links');
+const label = toggle.querySelector('.nav-toggle-label');
+const narrow = matchMedia('(max-width: 720px)');
+const full = navLinks.map(a => a.textContent); // real link text; the visible text is typed in and out on phones
+navLinks.forEach((a, i) => a.setAttribute('aria-label', full[i]));
+toggle.setAttribute('aria-label', 'Menu'); // stable name while the label decodes; aria-expanded carries the state
+const caret = Object.assign(document.createElement('span'), { className: 'caret' });
+caret.setAttribute('aria-hidden', 'true');
+const total = full.join('').length;
+let typed = 0, menuTimer;
+const show = () => { // `typed` characters across the links in order, caret after the last one
+  let rest = typed;
+  navLinks.forEach((a, i) => { a.textContent = full[i].slice(0, Math.max(rest, 0)); rest -= full[i].length; });
+  (navLinks.findLast(a => a.textContent) || navLinks[0]).append(caret);
+};
 function setMenu(open) {
-  toggle.setAttribute('aria-expanded', open);
-  links.classList.toggle('open', open);
+  const instant = reduced || !narrow.matches;
+  if (toggle.getAttribute('aria-expanded') !== String(open)) {
+    toggle.setAttribute('aria-expanded', open);
+    if (instant) label.textContent = open ? 'Close' : 'Menu'; else decode(label, 0, open ? 'Close' : 'Menu');
+  }
+  clearTimeout(menuTimer);
+  if (instant) { caret.remove(); navLinks.forEach((a, i) => { a.textContent = full[i]; }); links.classList.toggle('open', open); return; }
+  if (!open && !links.classList.contains('open')) return;
+  let wait = 0;
+  if (open && !links.classList.contains('open')) { typed = 0; show(); links.classList.add('open'); wait = 180; } // let the panel grow first
+  const tick = () => { // a toggle mid-way just clears the timer and runs this from the current `typed` the other way
+    if (open ? typed < total : typed > 0) { typed += open ? 1 : -1; show(); menuTimer = setTimeout(tick, open ? 25 : 8); }
+    else if (!open) { caret.remove(); links.classList.remove('open'); }
+  };
+  menuTimer = setTimeout(tick, wait);
 }
 toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
 links.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
+document.addEventListener('click', e => { // capture: a tap outside only closes the menu, it doesn't also hit the tile or link underneath
+  if (toggle.getAttribute('aria-expanded') === 'true' && !header.contains(e.target)) { e.preventDefault(); e.stopPropagation(); setMenu(false); }
+}, true);
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || toggle.getAttribute('aria-expanded') !== 'true') return;
+  if (links.contains(document.activeElement)) toggle.focus();
+  setMenu(false);
+});
+narrow.addEventListener('change', () => setMenu(false)); // past 720px this restores the full desktop links at once
 
 const resetTilt = c => { c.classList.remove('tilting'); c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); };
 
@@ -205,6 +246,18 @@ function applyFilter(tag) {
   filterStatus.textContent = `Showing ${n} of ${cardEls.length} projects`;
 }
 
+// Dialog motion: FLIP between a tile's rect and the dialog (transform-origin is top left in CSS)
+const ease = 'cubic-bezier(.2, .8, .2, 1)';
+const flip = (r, d) => `translate(${r.left - d.left}px, ${r.top - d.top}px) scale(${r.width / d.width}, ${r.height / d.height})`;
+const settle = dlg => { dlg.classList.remove('shut'); dlg.getAnimations({ subtree: true }).forEach(a => a.cancel()); };
+function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse pop), then close; one path for button, backdrop and Esc
+  if (!dlg.open || dlg.classList.contains('shut')) return;
+  if (reduced) return dlg.close();
+  settle(dlg); dlg.classList.add('shut'); // .shut fades the backdrop
+  const to = rect ? { transform: flip(rect, dlg.getBoundingClientRect()), opacity: 0 } : { transform: 'scale(.96)', opacity: 0 };
+  dlg.animate([{ transform: 'none', opacity: 1 }, to], { duration: rect ? 260 : 160, easing: rect ? ease : 'ease-in', fill: 'forwards' }).onfinish = () => dlg.close();
+}
+
 // Project dialog: each tile's title becomes a button; the dialog is filled from the card, so index.html stays the only copy
 (() => {
   const dlg = document.createElement('dialog');
@@ -212,6 +265,11 @@ function applyFilter(tag) {
   dlg.setAttribute('aria-labelledby', 'project-title');
   document.body.append(dlg);
   let opener;
+  const tile = () => { // the opener's tile rect, or null when it is filtered out or off-screen
+    const c = opener?.closest('.card'), r = c && !c.hidden && c.getBoundingClientRect();
+    return r && r.width && r.bottom > 0 && r.top < innerHeight ? r : null;
+  };
+  const close = () => shut(dlg, tile());
   cardEls.forEach(card => {
     const h = card.querySelector('h3');
     const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'open' });
@@ -221,21 +279,29 @@ function applyFilter(tag) {
     btn.addEventListener('click', () => {
       opener = btn; resetTilt(card);
       const body = Object.assign(document.createElement('div'), { className: 'project-body' });
-      const close = Object.assign(document.createElement('button'), { type: 'button', className: 'close', textContent: 'Close' });
-      close.setAttribute('aria-label', 'Close');
-      close.addEventListener('click', () => dlg.close());
+      const x = Object.assign(document.createElement('button'), { type: 'button', className: 'close', textContent: 'Close' });
+      x.setAttribute('aria-label', 'Close');
+      x.addEventListener('click', close);
       const title = Object.assign(document.createElement('h3'), { id: 'project-title', textContent: btn.textContent });
       const div = (className, ...kids) => { const d = Object.assign(document.createElement('div'), { className }); d.append(...kids.filter(Boolean)); return d; };
       const copy = sel => card.querySelector(sel)?.cloneNode(true);
       const info = div('project-info', title, copy(':scope > p'), copy('.tags'), copy('.links'));
       body.append(div('project-top', div('project-shot', copy('.preview')), info), div('project-case', copy('.case dl')));
-      dlg.replaceChildren(close, body);
+      settle(dlg);
+      const from = card.getBoundingClientRect();
+      dlg.replaceChildren(x, body);
       dlg.showModal();
+      if (reduced) return;
+      // grow out of the tile, then rise the content in once it has landed
+      dlg.animate([{ transform: flip(from, dlg.getBoundingClientRect()), opacity: .6 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: ease });
+      dlg.querySelectorAll('.close, .project-shot, .project-info, .project-case').forEach((el, i) =>
+        el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: 260 + i * 60, easing: ease, fill: 'backwards' }));
     });
     card.addEventListener('click', e => { if (!e.target.closest('a, summary, button')) btn.click(); }); // tilted corners can miss the overlay
   });
-  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
-  dlg.addEventListener('close', () => { if (opener?.isConnected) opener.focus({ preventScroll: true }); });
+  dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+  dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  dlg.addEventListener('close', () => { settle(dlg); if (opener?.isConnected) opener.focus({ preventScroll: true }); });
 })();
 
 // Hero code panel: types itself once when scrolled into view, keeping the token spans
@@ -355,13 +421,15 @@ if (codeEl && !reduced && 'IntersectionObserver' in window) {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); highlight(cur + (e.key === 'ArrowDown' ? 1 : -1)); }
     else if (e.key === 'Enter') { e.preventDefault(); if (shown[cur]) choose(shown[cur]); }
   });
-  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('click', e => { if (e.target === dlg) shut(dlg); });
+  dlg.addEventListener('cancel', e => { e.preventDefault(); shut(dlg); });
   dlg.addEventListener('close', () => {
+    settle(dlg);
     // Hand focus back unless an action moved it
     if ((!document.activeElement || document.activeElement === document.body) && prev?.isConnected) prev.focus({ preventScroll: true });
   });
   addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (dlg.open) dlg.close(); else if (!document.querySelector('dialog[open]')) open(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (dlg.open) shut(dlg); else if (!document.querySelector('dialog[open]')) open(); }
     else if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !dlg.open && !document.querySelector('dialog[open]') && !e.target.closest('input, textarea, select, [contenteditable]')) { e.preventDefault(); open(); }
   });
 
