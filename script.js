@@ -53,25 +53,28 @@ if (!reduced && 'IntersectionObserver' in window) {
 // Nav: blurred bar once scrolled, scroll progress, active section link
 const header = document.querySelector('.site-header');
 const bar = document.querySelector('.progress');
+const navLinks = [...document.querySelectorAll('.nav-links a')];
+let cur; // section the observer last reported
+const mark = () => { // at the very bottom the last link wins: a tall screen never lets Contact reach the observer band
+  const h = root.scrollHeight - innerHeight > 0 && root.scrollHeight - innerHeight - scrollY < 2 ? navLinks.at(-1).hash : cur;
+  navLinks.forEach(a => {
+    const on = a.hash === h;
+    a.classList.toggle('active', on);
+    if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+  });
+};
 function onScroll() {
   header.classList.toggle('scrolled', scrollY > 8);
   const max = root.scrollHeight - innerHeight;
   bar.style.transform = `scaleX(${max > 0 ? Math.min(scrollY / max, 1) : 0})`;
+  mark();
 }
 addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 
 if ('IntersectionObserver' in window) {
-  const navLinks = [...document.querySelectorAll('.nav-links a')];
   const spy = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (!e.isIntersecting) return;
-      navLinks.forEach(a => {
-        const on = a.hash === '#' + e.target.id;
-        a.classList.toggle('active', on);
-        if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
-      });
-    });
+    entries.forEach(e => { if (e.isIntersecting) { cur = '#' + e.target.id; mark(); } });
   }, { rootMargin: '-40% 0px -55% 0px' });
   document.querySelectorAll('main section[id]').forEach(s => spy.observe(s));
 }
@@ -88,17 +91,8 @@ links.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false)
 
 const resetTilt = c => { c.classList.remove('tilting'); c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); };
 
-// Hero spotlight + card tilt: skipped entirely for touch or reduced motion
+// Card tilt: skipped entirely for touch or reduced motion
 if (!reduced && !coarse) {
-  root.classList.add('fx-on');
-  // Hero spotlight
-  const hero = document.querySelector('.hero');
-  hero.addEventListener('pointermove', e => {
-    const r = hero.getBoundingClientRect();
-    hero.style.setProperty('--mx', `${e.clientX - r.left}px`);
-    hero.style.setProperty('--my', `${e.clientY - r.top}px`);
-  });
-
   // Card tilt (max 3deg) + border highlight
   document.querySelectorAll('.card').forEach(card => {
     card.addEventListener('pointermove', e => {
@@ -140,13 +134,13 @@ if (dc && dotsEnd && 'ResizeObserver' in window) {
     }
   };
   const tick = () => {
-    raf = 0; let moving = ptr.on;
+    raf = 0; let moving = false;
     const py = ptr.y + scrollY, [a, z] = range();
     for (let i = a; i < z; i++) {
       const dx = bx[i] - ptr.x, dy = by[i] - py, d = Math.hypot(dx, dy) || 1, near = ptr.on && d < R ? 1 - d / R : 0;
       vx[i] = (vx[i] + (dx / d * near * PUSH - ox[i]) * .12) * .8; vy[i] = (vy[i] + (dy / d * near * PUSH - oy[i]) * .12) * .8;
       ox[i] += vx[i]; oy[i] += vy[i]; k[i] += (near - k[i]) * .15;
-      if (Math.max(Math.abs(ox[i]), Math.abs(oy[i]), Math.abs(k[i] * 20)) > .05) moving = true;
+      if (Math.abs(vx[i]) + Math.abs(vy[i]) > .01 || Math.abs(near - k[i]) > .005) moving = true; // still easing; a resting pointer lets the loop stop
     }
     draw();
     if (moving) go();
@@ -204,8 +198,8 @@ function applyFilter(tag) {
       c.classList.remove('out');
     } else if (!c.hidden) {
       resetTilt(c); // no stale tilt on a hidden card
-      if (reduced) c.hidden = true;
-      else { c.classList.add('out'); c.hideTimer = setTimeout(() => { c.hidden = true; }, 200); }
+      if (reduced) { c.hidden = true; console.assert(!c.offsetParent, 'hidden card still laid out'); }
+      else { c.classList.add('out'); c.hideTimer = setTimeout(() => { c.hidden = true; console.assert(!c.offsetParent, 'hidden card still laid out'); }, 200); }
     }
   });
   filterStatus.textContent = `Showing ${n} of ${cardEls.length} projects`;
@@ -225,7 +219,7 @@ function applyFilter(tag) {
     btn.append(...h.childNodes);
     h.append(btn);
     btn.addEventListener('click', () => {
-      opener = btn;
+      opener = btn; resetTilt(card);
       const body = Object.assign(document.createElement('div'), { className: 'project-body' });
       const close = Object.assign(document.createElement('button'), { type: 'button', className: 'close', textContent: 'Close' });
       close.setAttribute('aria-label', 'Close');
@@ -243,8 +237,6 @@ function applyFilter(tag) {
   dlg.addEventListener('close', () => { if (opener?.isConnected) opener.focus({ preventScroll: true }); });
 })();
 
-const scrollBehavior = () => (reduced ? 'auto' : 'smooth');
-
 // Hero code panel: types itself once when scrolled into view, keeping the token spans
 const codeEl = document.querySelector('.code');
 if (codeEl && !reduced && 'IntersectionObserver' in window) {
@@ -257,7 +249,6 @@ if (codeEl && !reduced && 'IntersectionObserver' in window) {
   caret.setAttribute('aria-hidden', 'true');
   nodes[0][0].after(caret);
   codeEl.setAttribute('aria-hidden', 'true');
-  codeEl.classList.add('typing');
   new IntersectionObserver((es, o) => {
     if (!es[0].isIntersecting) return;
     o.disconnect();
@@ -305,7 +296,7 @@ if (codeEl && !reduced && 'IntersectionObserver' in window) {
   const items = [];
   const add = (label, hint, run) => items.push({ label, hint, run });
   document.querySelectorAll('.nav-links a').forEach(a => {
-    add('Go to ' + a.textContent.trim(), 'section', () => document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: scrollBehavior() }));
+    add('Go to ' + a.textContent.trim(), 'section', () => document.querySelector(a.getAttribute('href'))?.scrollIntoView());
   });
   const mail = document.querySelector('#contact a[href^="mailto:"]');
   if (mail) {
