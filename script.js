@@ -91,7 +91,7 @@ const links = document.querySelector('.nav-links');
 const label = toggle.querySelector('.nav-toggle-label');
 const narrow = matchMedia('(max-width: 720px)');
 const full = navLinks.map(a => a.textContent); // real link text; the visible text is typed in and out on phones
-navLinks.forEach((a, i) => a.setAttribute('aria-label', full[i]));
+navLinks.forEach((a, i) => { a.setAttribute('aria-label', full[i]); a.innerHTML = '<span></span>'; a.firstChild.textContent = full[i]; }); // text lives in a span: decode rewrites it, the link box and its ::before number stay untouched
 toggle.setAttribute('aria-label', 'Menu'); // stable name while the label decodes; aria-expanded carries the state
 const caret = Object.assign(document.createElement('span'), { className: 'caret' });
 caret.setAttribute('aria-hidden', 'true');
@@ -99,8 +99,8 @@ const total = full.join('').length;
 let typed = 0, menuTimer;
 const show = () => { // `typed` characters across the links in order, caret after the last one
   let rest = typed;
-  navLinks.forEach((a, i) => { a.textContent = full[i].slice(0, Math.max(rest, 0)); rest -= full[i].length; });
-  (navLinks.findLast(a => a.textContent) || navLinks[0]).append(caret);
+  navLinks.forEach((a, i) => { a.firstChild.textContent = full[i].slice(0, Math.max(rest, 0)); rest -= full[i].length; });
+  (navLinks.findLast(a => a.firstChild.textContent) || navLinks[0]).append(caret);
 };
 function setMenu(open) {
   const instant = reduced || !narrow.matches;
@@ -109,7 +109,7 @@ function setMenu(open) {
     if (instant) label.textContent = open ? 'Close' : 'Menu'; else decode(label, 0, open ? 'Close' : 'Menu');
   }
   clearTimeout(menuTimer);
-  if (instant) { caret.remove(); navLinks.forEach((a, i) => { a.textContent = full[i]; }); links.classList.toggle('open', open); return; }
+  if (instant) { caret.remove(); navLinks.forEach((a, i) => { a.firstChild.textContent = full[i]; }); links.classList.toggle('open', open); return; }
   if (!open && !links.classList.contains('open')) return;
   let wait = 0;
   if (open && !links.classList.contains('open')) { typed = 0; show(); links.classList.add('open'); wait = 180; } // let the panel grow first
@@ -130,7 +130,7 @@ addEventListener('keydown', e => {
   setMenu(false);
 });
 if (!reduced) navLinks.forEach(a => a.addEventListener('pointerenter', e => { // desktop hover: the name decodes; `to` is the real text, so a rapid re-hover never starts from scrambled glyphs
-  if (e.pointerType === 'mouse' && !narrow.matches) decode(a, 0, a.getAttribute('aria-label'));
+  if (e.pointerType === 'mouse' && !narrow.matches) decode(a.firstChild, 0, full[navLinks.indexOf(a)]);
 }));
 narrow.addEventListener('change', () => setMenu(false)); // past 720px this restores the full desktop links at once
 
