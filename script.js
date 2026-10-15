@@ -225,10 +225,10 @@ function applyFilter(tag) {
       close.setAttribute('aria-label', 'Close');
       close.addEventListener('click', () => dlg.close());
       const title = Object.assign(document.createElement('h3'), { id: 'project-title', textContent: btn.textContent });
-      const dl = card.querySelector('.case dl')?.cloneNode(true);
-      const cs = dl && Object.assign(document.createElement('div'), { className: 'case-body' });
-      cs?.append(dl);
-      body.append(...[card.querySelector('.preview'), title, card.querySelector(':scope > p'), card.querySelector('.tags'), card.querySelector('.links'), cs].filter(Boolean).map(n => n.cloneNode?.(true) ?? n));
+      const div = (className, ...kids) => { const d = Object.assign(document.createElement('div'), { className }); d.append(...kids.filter(Boolean)); return d; };
+      const copy = sel => card.querySelector(sel)?.cloneNode(true);
+      const info = div('project-info', title, copy(':scope > p'), copy('.tags'), copy('.links'));
+      body.append(div('project-top', div('project-shot', copy('.preview')), info), div('project-case', copy('.case dl')));
       dlg.replaceChildren(close, body);
       dlg.showModal();
     });
