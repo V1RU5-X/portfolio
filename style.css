@@ -182,9 +182,13 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
 /* project dialog (built by script.js) */
 .project, .palette { width: min(100% - 2rem, 48rem); max-height: 90vh; padding: 0; overflow: hidden; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; }
 .project::backdrop, .palette::backdrop { background: rgba(5, 8, 12, .72); }
-.project { width: min(100% - 2rem, 62rem); }
-.project-body { max-height: 90vh; overflow: auto; padding: 1.75rem; }
-.project .close { position: absolute; top: .75rem; right: .75rem; z-index: 2; font: 500 .8rem var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 4px; padding: .25rem .8rem; cursor: pointer; transition: color .2s, border-color .2s; }
+.project { width: min(100% - 2rem, 62rem); border-color: var(--line); } /* matches the hero code window */
+.project[open] { display: flex; flex-direction: column; } /* title bar stays put; only the body scrolls */
+.project-body { flex: 1; min-height: 0; overflow: auto; padding: 1.75rem; scrollbar-width: none; }
+.project-body::-webkit-scrollbar { display: none; }
+.project .term-bar { font-family: var(--font-mono); }
+.project .term-bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project .close { margin-left: .6rem; font: 500 .8rem var(--font-mono); color: var(--ink); background: none; border: 1px solid var(--line-strong); border-radius: 4px; padding: .1rem .7rem; cursor: pointer; transition: color .2s, border-color .2s; }
 .project .close:hover { color: var(--accent); border-color: var(--accent); }
 .project-top { display: grid; gap: 1.25rem 2rem; }
 .project-shot .preview { margin: 0; }
@@ -200,7 +204,6 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
 .project dl dt:first-child { margin-top: 0; }
 @media (min-width: 48rem) {
   .project-top { grid-template-columns: 1fr 1fr; align-items: start; }
-  .project h3 { padding-right: 4.5rem; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .palette[open] { animation: pop .25s ease-out; } /* the project dialog grows out of its tile in script.js */
