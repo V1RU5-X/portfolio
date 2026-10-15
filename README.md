@@ -13,7 +13,7 @@ A single place to present who I am, what I have achieved and what I have built: 
 - An interactive dot field behind the page: dots light up and shift away from the pointer (or a touch), then spring back. Project cards tilt slightly on hover.
 - A code-editor panel in the hero whose code types itself out once when it scrolls into view.
 - Decode effect on headings: the hero title and section headings scramble through random characters and settle into the real text.
-- Projects are compact tiles that swap to a screenshot on hover and open a detail view with links and the case study.
+- Projects are compact tiles that swap to a screenshot on hover and open a detail view with a repo link and the case study.
 - Projects can be filtered by technology.
 - A keyboard command palette (Ctrl+K, ⌘K or `/`) to jump to a section, copy the email, open a link or download the resume.
 - Animations: staggered hero intro, scroll-reveal of sections and cards, drawing section rules and timeline, active-section nav highlight and a scroll progress bar.
