@@ -280,7 +280,6 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
       opener = btn; resetTilt(card);
       const body = Object.assign(document.createElement('div'), { className: 'project-body' });
       const x = Object.assign(document.createElement('button'), { type: 'button', className: 'close', textContent: 'Close' });
-      x.setAttribute('aria-label', 'Close');
       x.addEventListener('click', close);
       const title = Object.assign(document.createElement('h3'), { id: 'project-title', textContent: btn.textContent });
       const div = (className, ...kids) => { const d = Object.assign(document.createElement('div'), { className }); d.append(...kids.filter(Boolean)); return d; };
@@ -289,12 +288,15 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
       body.append(div('project-top', div('project-shot', copy('.preview')), info), div('project-case', copy('.case dl')));
       settle(dlg);
       const from = card.getBoundingClientRect();
-      dlg.replaceChildren(x, body);
+      const slug = btn.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const bar = div('term-bar', ...[0, 1, 2].map(() => Object.assign(document.createElement('i'), { ariaHidden: 'true' })), Object.assign(document.createElement('span'), { textContent: slug + '.md' }), x);
+      dlg.replaceChildren(bar, body);
       dlg.showModal();
       if (reduced) return;
       // grow out of the tile, then rise the content in once it has landed
       dlg.animate([{ transform: flip(from, dlg.getBoundingClientRect()), opacity: .6 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: ease });
-      dlg.querySelectorAll('.close, .project-shot, .project-info, .project-case').forEach((el, i) =>
+      setTimeout(() => decode(x, 0, 'Close'), 300); // once the window has landed; a new button per open, so a stale run can't touch it
+      dlg.querySelectorAll('.project-shot, .project-info, .project-case').forEach((el, i) =>
         el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: 260 + i * 60, easing: ease, fill: 'backwards' }));
     });
     card.addEventListener('click', e => { if (!e.target.closest('a, summary, button')) btn.click(); }); // tilted corners can miss the overlay
