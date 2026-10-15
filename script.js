@@ -29,6 +29,7 @@ function decode(el, delay = 0, to) {
   let { width, height } = el.getBoundingClientRect();
   const text = to ?? el.textContent;
   if (to !== undefined) { el.textContent = to; width = Math.max(width, el.getBoundingClientRect().width); } // wider of old/new, so nothing jumps
+  const name = el.getAttribute('aria-label'); // a fixed name (nav links) is put back afterwards
   el.setAttribute('aria-label', text); // assistive tech only ever gets the real text
   el.style.width = width + 'px'; el.style.overflow = 'hidden'; // fixed (not min) width: heading is a flex item
   el.style.height = height + 'px';
@@ -40,7 +41,7 @@ function decode(el, delay = 0, to) {
     el.textContent = [...text].map((ch, i) => (i < keep || ch === ' ' ? ch : glyphs[Math.floor(Math.random() * glyphs.length)])).join('');
     if (p < 1) return requestAnimationFrame(frame);
     el.textContent = text;
-    el.removeAttribute('aria-label');
+    if (name === null) el.removeAttribute('aria-label'); else el.setAttribute('aria-label', name);
     el.style.width = el.style.height = el.style.overflow = '';
     if (!el.getAttribute('style')) el.removeAttribute('style');
   })(performance.now());
@@ -128,6 +129,9 @@ addEventListener('keydown', e => {
   if (links.contains(document.activeElement)) toggle.focus();
   setMenu(false);
 });
+if (!reduced) navLinks.forEach(a => a.addEventListener('pointerenter', e => { // desktop hover: the name decodes; `to` is the real text, so a rapid re-hover never starts from scrambled glyphs
+  if (e.pointerType === 'mouse' && !narrow.matches) decode(a, 0, a.getAttribute('aria-label'));
+}));
 narrow.addEventListener('change', () => setMenu(false)); // past 720px this restores the full desktop links at once
 
 const resetTilt = c => { c.classList.remove('tilting'); c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); };
@@ -264,7 +268,7 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
   dlg.className = 'project';
   dlg.setAttribute('aria-labelledby', 'project-title');
   document.body.append(dlg);
-  let opener;
+  let opener, typer;
   const tile = () => { // the opener's tile rect, or null when it is filtered out or off-screen
     const c = opener?.closest('.card'), r = c && !c.hidden && c.getBoundingClientRect();
     return r && r.width && r.bottom > 0 && r.top < innerHeight ? r : null;
@@ -277,14 +281,15 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
     btn.append(...h.childNodes);
     h.append(btn);
     btn.addEventListener('click', () => {
-      opener = btn; resetTilt(card);
+      opener = btn; resetTilt(card); clearInterval(typer);
       const body = Object.assign(document.createElement('div'), { className: 'project-body' });
       const x = Object.assign(document.createElement('button'), { type: 'button', className: 'close', textContent: 'Close' });
       x.addEventListener('click', close);
       const title = Object.assign(document.createElement('h3'), { id: 'project-title', textContent: btn.textContent });
       const div = (className, ...kids) => { const d = Object.assign(document.createElement('div'), { className }); d.append(...kids.filter(Boolean)); return d; };
       const copy = sel => card.querySelector(sel)?.cloneNode(true);
-      const info = div('project-info', title, copy(':scope > p'), copy('.tags'), copy('.links'));
+      const desc = copy(':scope > p');
+      const info = div('project-info', title, desc, copy('.tags'), copy('.links'));
       body.append(div('project-top', div('project-shot', copy('.preview')), info), div('project-case', copy('.case dl')));
       settle(dlg);
       const from = card.getBoundingClientRect();
@@ -293,6 +298,25 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
       dlg.replaceChildren(bar, body);
       dlg.showModal();
       if (reduced) return;
+      // type the title and description: full text stays in the DOM (transparent where untyped), so wrapping and the name never change
+      const caret = Object.assign(document.createElement('span'), { className: 'caret' });
+      caret.setAttribute('aria-hidden', 'true');
+      const lines = [title, desc].filter(Boolean).map(el => {
+        const full = el.textContent, a = new Text(), b = Object.assign(document.createElement('span'), { className: 'typed-rest', textContent: full });
+        el.replaceChildren(a, caret, b);
+        return { a, b, full };
+      });
+      lines[0].a.after(caret);
+      let i = 0, n = 0;
+      const step = Math.ceil(lines.reduce((t, l) => t + l.full.length, 0) / 40); // whole thing in ~0.65s whatever the length
+      typer = setTimeout(() => {
+        typer = setInterval(() => {
+          const l = lines[i], c = Math.min(n += step, l.full.length);
+          l.a.data = l.full.slice(0, c); l.b.textContent = l.full.slice(c);
+          if (c < l.full.length) return;
+          if (i + 1 < lines.length) { n = 0; lines[++i].a.after(caret); } else clearInterval(typer);
+        }, 16);
+      }, 340);
       // grow out of the tile, then rise the content in once it has landed
       dlg.animate([{ transform: flip(from, dlg.getBoundingClientRect()), opacity: .6 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: ease });
       setTimeout(() => decode(x, 0, 'Close'), 300); // once the window has landed; a new button per open, so a stale run can't touch it
@@ -303,7 +327,7 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
   });
   dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
   dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
-  dlg.addEventListener('close', () => { settle(dlg); if (opener?.isConnected) opener.focus({ preventScroll: true }); });
+  dlg.addEventListener('close', () => { clearInterval(typer); settle(dlg); if (opener?.isConnected) opener.focus({ preventScroll: true }); });
 })();
 
 // Hero code panel: types itself once when scrolled into view, keeping the token spans
