@@ -102,7 +102,6 @@ if (!reduced && !coarse) {
   // Card tilt (max 3deg) + border highlight
   document.querySelectorAll('.card').forEach(card => {
     card.addEventListener('pointermove', e => {
-      if (card.querySelector('details[open]')) return resetTilt(card); // open case study: no tilt
       const r = card.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
       card.classList.add('tilting');
@@ -211,6 +210,38 @@ function applyFilter(tag) {
   });
   filterStatus.textContent = `Showing ${n} of ${cardEls.length} projects`;
 }
+
+// Project dialog: each tile's title becomes a button; the dialog is filled from the card, so index.html stays the only copy
+(() => {
+  const dlg = document.createElement('dialog');
+  dlg.className = 'project';
+  dlg.setAttribute('aria-labelledby', 'project-title');
+  document.body.append(dlg);
+  let opener;
+  cardEls.forEach(card => {
+    const h = card.querySelector('h3');
+    const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'open' });
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.append(...h.childNodes);
+    h.append(btn);
+    btn.addEventListener('click', () => {
+      opener = btn;
+      const body = Object.assign(document.createElement('div'), { className: 'project-body' });
+      const close = Object.assign(document.createElement('button'), { type: 'button', className: 'close', textContent: 'Close' });
+      close.setAttribute('aria-label', 'Close');
+      close.addEventListener('click', () => dlg.close());
+      const title = Object.assign(document.createElement('h3'), { id: 'project-title', textContent: btn.textContent });
+      const dl = card.querySelector('.case dl')?.cloneNode(true);
+      const cs = dl && Object.assign(document.createElement('div'), { className: 'case-body' });
+      cs?.append(dl);
+      body.append(...[card.querySelector('.preview'), title, card.querySelector(':scope > p'), card.querySelector('.tags'), card.querySelector('.links'), cs].filter(Boolean).map(n => n.cloneNode?.(true) ?? n));
+      dlg.replaceChildren(close, body);
+      dlg.showModal();
+    });
+  });
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('close', () => { if (opener?.isConnected) opener.focus({ preventScroll: true }); });
+})();
 
 const scrollBehavior = () => (reduced ? 'auto' : 'smooth');
 
@@ -338,8 +369,8 @@ if (codeEl && !reduced && 'IntersectionObserver' in window) {
     if ((!document.activeElement || document.activeElement === document.body) && prev?.isConnected) prev.focus({ preventScroll: true });
   });
   addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); dlg.open ? dlg.close() : open(); }
-    else if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !dlg.open && !e.target.closest('input, textarea, select, [contenteditable]')) { e.preventDefault(); open(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (dlg.open) dlg.close(); else if (!document.querySelector('dialog[open]')) open(); }
+    else if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !dlg.open && !document.querySelector('dialog[open]') && !e.target.closest('input, textarea, select, [contenteditable]')) { e.preventDefault(); open(); }
   });
 
 })();
