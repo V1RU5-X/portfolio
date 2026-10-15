@@ -176,14 +176,26 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
 /* project dialog (built by script.js) */
 .project, .palette { width: min(100% - 2rem, 48rem); max-height: 90vh; padding: 0; overflow: hidden; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; }
 .project::backdrop, .palette::backdrop { background: rgba(5, 8, 12, .72); }
+.project { width: min(100% - 2rem, 62rem); }
 .project-body { max-height: 90vh; overflow: auto; padding: 1.75rem; }
 .project .close { position: absolute; top: .75rem; right: .75rem; z-index: 2; font: 500 .8rem var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 4px; padding: .25rem .8rem; cursor: pointer; transition: color .2s, border-color .2s; }
 .project .close:hover { color: var(--accent); border-color: var(--accent); }
+.project-top { display: grid; gap: 1.25rem 2rem; }
+.project-shot .preview { margin: 0; }
 .project h3 { font: 600 1.6rem/1.2 var(--font-sans); letter-spacing: -.015em; margin: 0 0 .75rem; }
-.project p { margin: 0 0 .5rem; color: var(--muted); }
-.project .preview { margin: 0 0 1.5rem; }
-.project .case-body { margin-top: 1.25rem; padding-top: .25rem; border-top: 1px solid var(--line); }
+.project p { margin: 0 0 .75rem; color: var(--muted); }
+.project .tags { margin: .25rem 0 1.25rem; }
+.project .links { margin: 0; }
+.project .links a { display: inline-block; padding: .55rem 1.1rem; border: 1px solid var(--accent); border-radius: 4px; transition: background .2s, color .2s; }
+.project .links a:hover { background: var(--accent); color: var(--on-accent); text-decoration: none; }
+.project .links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.project-case { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
 .project dl { margin: 0; }
+.project dl dt:first-child { margin-top: 0; }
+@media (min-width: 48rem) {
+  .project-top { grid-template-columns: 1fr 1fr; align-items: start; }
+  .project h3 { padding-right: 4.5rem; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .project[open], .palette[open] { animation: pop .25s ease-out; }
   .project[open]::backdrop, .palette[open]::backdrop { animation: fade .25s ease-out; }
