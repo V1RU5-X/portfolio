@@ -232,6 +232,7 @@ function applyFilter(tag) {
       dlg.replaceChildren(close, body);
       dlg.showModal();
     });
+    card.addEventListener('click', e => { if (!e.target.closest('a, summary, button')) btn.click(); }); // tilted corners can miss the overlay
   });
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
   dlg.addEventListener('close', () => { if (opener?.isConnected) opener.focus({ preventScroll: true }); });
