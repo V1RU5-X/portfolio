@@ -38,4 +38,4 @@ script.js    Scroll reveal, nav, hero dot field, card tilt, code typing, heading
 
 ## Status
 
-All content is currently placeholder text.
+About, accomplishments and contact details are filled in, and the first project is a case study of this site. The remaining project slots are still placeholders.
