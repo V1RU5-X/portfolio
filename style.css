@@ -144,13 +144,16 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
 .preview::after { content: "TODO: screenshot"; display: grid; place-items: center; font: 400 .8rem var(--font-mono); color: var(--muted);
   background: repeating-linear-gradient(135deg, transparent 0 10px, var(--line) 10px 11px); }
 .preview img { z-index: 1; object-fit: cover; display: block; }
-.js .card { display: flex; flex-direction: column; justify-content: flex-end; aspect-ratio: 4 / 3; overflow: hidden; padding: 1.25rem; }
+.js .card { display: flex; flex-direction: column; justify-content: flex-end; min-height: 15rem; overflow: hidden; padding: 1.25rem; }
 .card[hidden] { display: none; }
 .js .card .preview { position: absolute; inset: 0; aspect-ratio: auto; z-index: 0; margin: 0; border: 0; border-radius: inherit; opacity: 0; }
 .js .card h3, .js .card > p, .js .card .tags { z-index: 1; } /* flex items: z-index without position, so .open::after anchors to the card */
 .js .card > p, .js .card .tags { pointer-events: none; } /* sit above the overlay but let clicks through */
 .js .card > p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .js .card .tags { margin: .75rem 0 0; }
+.js .card .card-bar { margin: -1.25rem -1.25rem auto; z-index: 1; background: var(--surface); font-family: var(--font-mono); }
+.card-bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-bar b { font-weight: 400; color: var(--accent); }
 .js .card .links, .js .card .case { display: none; } /* shown in the dialog instead */
 .card .open { position: static; font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
 .card .open::after { content: ""; position: absolute; inset: 0; z-index: 2; } /* whole tile is the click target; scoped so .nav-links.open never gets it */

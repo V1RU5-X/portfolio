@@ -274,12 +274,18 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
     return r && r.width && r.bottom > 0 && r.top < innerHeight ? r : null;
   };
   const close = () => shut(dlg, tile());
-  cardEls.forEach(card => {
+  const tag = (t, textContent) => Object.assign(document.createElement(t), { textContent });
+  cardEls.forEach((card, i) => {
     const h = card.querySelector('h3');
     const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'open' });
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.append(...h.childNodes);
     h.append(btn);
+    const slug = btn.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const cbar = Object.assign(document.createElement('div'), { className: 'term-bar card-bar' });
+    cbar.setAttribute('aria-hidden', 'true');
+    cbar.append(tag('i'), tag('i'), tag('i'), tag('span', slug + '.md'), tag('b', String(i + 1).padStart(2, '0')));
+    card.prepend(cbar);
     btn.addEventListener('click', () => {
       opener = btn; resetTilt(card); clearInterval(typer);
       const body = Object.assign(document.createElement('div'), { className: 'project-body' });
@@ -293,7 +299,6 @@ function shut(dlg, rect) { // animate out (into `rect` if given, else a reverse 
       body.append(div('project-top', div('project-shot', copy('.preview')), info), div('project-case', copy('.case dl')));
       settle(dlg);
       const from = card.getBoundingClientRect();
-      const slug = btn.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const bar = div('term-bar', ...[0, 1, 2].map(() => Object.assign(document.createElement('i'), { ariaHidden: 'true' })), Object.assign(document.createElement('span'), { textContent: slug + '.md' }), x);
       dlg.replaceChildren(bar, body);
       dlg.showModal();
