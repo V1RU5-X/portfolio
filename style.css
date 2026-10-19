@@ -167,7 +167,10 @@ main, .site-footer { position: relative; z-index: 1; } /* content above the dot 
   .js .card:hover .preview { opacity: 1; }
   .js .card:hover .preview img { transform: scale(1.03); }
 }
-.card h3 { font: 600 1.3rem/1.2 var(--font-sans); letter-spacing: -.015em; margin: 0 0 .75rem; }
+.card h3 { font: 700 1.45rem/1.15 var(--font-sans); letter-spacing: -.02em; margin: 0 0 .75rem; }
+.card h3::after { content: "\2192" / ""; color: var(--accent); margin-left: .4em; display: inline-block; transition: translate .2s; }
+.card:has(.open:focus-visible) h3 { color: var(--accent); }
+.card:has(.open:focus-visible) h3::after { translate: .25em 0; }
 .card p { margin: 0 0 .5rem; color: var(--muted); }
 .links { display: flex; gap: 1.5rem; font: 500 .85rem var(--font-mono); }
 .links a { color: var(--accent); text-decoration: none; }
